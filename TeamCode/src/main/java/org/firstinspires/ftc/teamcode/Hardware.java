@@ -32,45 +32,51 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 
 public class Hardware {
-    public static DcMotor backLeft, backRight, frontLeft, frontRight, linearSlide;
-    public static CRServo wrist, inTake, drone;
+    public static DcMotor backLeft, backRight, frontLeft, frontRight, armMotor, ascent2;
+    public static CRServo inTake;//, drone;
+    public static Servo wrist;
 
     public static void init(HardwareMap hwMap) {
         backLeft = hwMap.get(DcMotor.class, "backLeft");
         backRight = hwMap.get(DcMotor.class, "backRight");
         frontLeft = hwMap.get(DcMotor.class, "frontLeft");
         frontRight = hwMap.get(DcMotor.class, "frontRight");
-        linearSlide = hwMap.get(DcMotor.class, "linearSlide");
-        wrist = hwMap.get(CRServo.class, "claw");
+        armMotor = hwMap.get(DcMotor.class, "linearSlide");
+        wrist = hwMap.get(Servo.class, "wrist");
         inTake = hwMap.get(CRServo.class, "inTake");
-        drone = hwMap.get(CRServo.class, "drone");
+        ascent2 = hwMap.get(DcMotor.class, "ascent2");
+        //drone = hwMap.get(CRServo.class, "drone");
 
         backLeft.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
         backRight.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
         frontLeft.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
         frontRight.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
-        linearSlide.setDirection(DcMotor.Direction.FORWARD);
+        armMotor.setDirection(DcMotor.Direction.FORWARD);
+        ascent2.setDirection(DcMotor.Direction.REVERSE);
 
         backLeft.setPower(0);
         backRight.setPower(0);
         frontLeft.setPower(0);
         frontRight.setPower(0);
-        linearSlide.setPower(0);
+        armMotor.setPower(0);
+        ascent2.setPower(0);
 
         backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        linearSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        linearSlide.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        linearSlide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        ascent2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
  }

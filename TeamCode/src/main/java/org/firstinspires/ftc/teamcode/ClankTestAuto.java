@@ -1,78 +1,60 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
-@Autonomous(name="Clank Autonomous (Blue)", group="Autonomous Bread")
-public class ClankAutoBlue extends LinearOpMode {
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+
+@Autonomous(name="Clank Test Auto", group="Autonomous Bread")
+public class ClankTestAuto extends LinearOpMode {
 
     static final double countsPerMotorRev = 140;
-    static final double wheelCircumferenceInches = 3.78 * Math.PI;
+    static final double wheelCircumferenceInches = 3.5 * Math.PI;
     static final double countsPerInch = countsPerMotorRev / wheelCircumferenceInches;
-    static final double countsPerDegree = (countsPerInch * (14.31 * Math.PI) / 360) * (4.5/3.0);
+    static final double countsPerDegree = (countsPerInch * (14.31 * Math.PI) / 360) * (4.1/3.0); // 1.5 is a magic number, idk why it workso
+
+    //IMU stuff
+    double integralSum = 0;
+    final double Kp = PIDConstants.Kp;
+    final double Ki = PIDConstants.Ki;
+    final double Kd = PIDConstants.Kd;
+    ElapsedTime timer = new ElapsedTime();
+    private double lastError = 0;
+    private BNO055IMU imu;
 
     @Override
     public void runOpMode() {
-        //1. init
         Hardware.init(this.hardwareMap);
-        resetMotors();
-        //Hardware.wrist.setPower(-0.3);
 
+        //IMU stuff
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.mode = BNO055IMU.SensorMode.IMU;
+        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+        imu.initialize(parameters);
+
+        resetMotors();
         waitForStart();
 
-        //Hardware.inTake.setPower(0.1);
-        sleep(500);
-        linearSlideTo(0);
+        IMUTurn(90, 1000);
 
-        //↶, ↷, ↑, ↓, °
-        //2. ↑1"
-        encoderDrive(-0.5, -5, 10);
-        //3. ↶90°
-        encoderTurn(0.5, 90, 10);
-        //4. ↑48"
-        encoderDrive(-0.5, -48, 10);
-        //5. slide↓=0, drop
+        IMUTurn(0, 1000);
 
-        linearSlideTo(0);
-        //Hardware.wrist.setPower(0.5);
-        sleep(1000);
-/*
-        //6. slide↑=72
-        linearSlideTo(-72);
-        //7. ↓48"
-        encoderDrive(0.5, 48, 10);
-        //8. ↷90°
-        encoderTurn(-0.5, -90, 10);
-        //9. ↑21"
-        encoderDrive(-0.5,-21,10);
-        //10. slide↓=0, grab
-        linearSlideTo(0);
-        Hardware.claw.setPower(-0.3);
-
-        //11. slide↑=72
-        linearSlideTo(-72);
-        //12. ↓21"
-        encoderDrive(0.5, 21, 10);
-        //13. ↶90°
-        encoderTurn(0.5, 90, 10);
-        //14. ↑48"
-        encoderDrive(-0.5, -48, 10);
-        //15. slide↓=0, drop
-
-        linearSlideTo(0);
-        Hardware.claw.setPower(0.5);
-        sleep(1000);
- */
+        IMUTurn(180, 1000);
     }
 
     public void encoderDrive(double speed, double inches, int msToWaitAfter) {
         resetMotors();
 
         Hardware.backLeft.setTargetPosition((int)Math.round(inches * countsPerInch));
-        Hardware.backRight.setTargetPosition((int)Math.round(inches * countsPerInch));
+        Hardware.backRight.setTargetPosition(-(int)Math.round(inches * countsPerInch));
         Hardware.frontLeft.setTargetPosition((int)Math.round(inches * countsPerInch));
-        Hardware.frontRight.setTargetPosition((int)Math.round(inches * countsPerInch));
+        Hardware.frontRight.setTargetPosition(-(int)Math.round(inches * countsPerInch));
 
         Hardware.backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         Hardware.backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -80,6 +62,48 @@ public class ClankAutoBlue extends LinearOpMode {
         Hardware.frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
         //Start motion.
+        Hardware.backLeft.setPower(speed);
+        Hardware.backRight.setPower(-speed);
+        Hardware.frontLeft.setPower(speed);
+        Hardware.frontRight.setPower(-speed);
+
+        while (busy()) {
+            telemetry.addLine("Running..");
+            telemetry.update();
+        }
+
+        resetMotors();
+        sleep(msToWaitAfter);
+    }
+
+    public void armRun(double speed, double position, int msToWaitAfter) {
+        Hardware.armMotor.setTargetPosition((int) (position));
+        Hardware.armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        resetRuntime();
+        Hardware.armMotor.setPower(speed);
+
+        while (busy()) {
+            telemetry.addLine("Running..");
+            telemetry.update();
+        }
+        resetMotors();
+        sleep(msToWaitAfter);
+    }
+    public void encoderTurn(double speed, double turnDegrees, int msToWaitAfter) {
+        resetMotors();
+        Hardware.backLeft.setTargetPosition((int) (turnDegrees * countsPerDegree));
+        Hardware.backRight.setTargetPosition((int) (turnDegrees * countsPerDegree));
+        Hardware.frontLeft.setTargetPosition((int) (turnDegrees * countsPerDegree));
+        Hardware.frontRight.setTargetPosition((int) (turnDegrees * countsPerDegree));
+
+        //Turn On RUN_TO_POSITION
+        Hardware.backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Hardware.backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Hardware.frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Hardware.frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        //reset the timeout time and start motion.
+        resetRuntime();
         Hardware.backLeft.setPower(speed);
         Hardware.backRight.setPower(speed);
         Hardware.frontLeft.setPower(speed);
@@ -94,41 +118,27 @@ public class ClankAutoBlue extends LinearOpMode {
         sleep(msToWaitAfter);
     }
 
-    public void linearSlideTo(int position) {
-        Hardware.linearSlide.setTargetPosition(position);
-        Hardware.linearSlide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        Hardware.linearSlide.setPower(0.5);
-        while (Hardware.linearSlide.isBusy()) {
-            telemetry.addLine("Raising linear slide..");
-        }
-        Hardware.linearSlide.setPower(0);
-    }
-    public void encoderTurn(double speed, double turnDegrees, int msToWaitAfter) {
-        resetMotors();
-        Hardware.backLeft.setTargetPosition((int) (turnDegrees * countsPerDegree));
-        Hardware.backRight.setTargetPosition((int) (-turnDegrees * countsPerDegree));
-        Hardware.frontLeft.setTargetPosition((int) (turnDegrees * countsPerDegree));
-        Hardware.frontRight.setTargetPosition((int) (-turnDegrees * countsPerDegree));
+    public void IMUTurn(double refrenceAngle, int msToWaitAfter) {
+        double range = 3;
 
-        //Turn On RUN_TO_POSITION
-        Hardware.backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        Hardware.backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        Hardware.frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        Hardware.frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        while(range == range) {
+            telemetry.addData("Target IMU Angle", refrenceAngle);
+            telemetry.addData("Current IMU Angle", -imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle);
+            double power = PIDControl.turnToPosition(-refrenceAngle, imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle);
+            if (((-imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle) >= refrenceAngle - range) && ((-imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle) <= refrenceAngle + range)) {
+                //requestOpModeStop();
+                power = 0;
+                break;
+            }
 
-        //reset the timeout time and start motion.
-        resetRuntime();
-        Hardware.backLeft.setPower(speed);
-        Hardware.backRight.setPower(-speed);
-        Hardware.frontLeft.setPower(speed);
-        Hardware.frontRight.setPower(-speed);
+            Hardware.frontLeft.setPower(power);
+            Hardware.backLeft.setPower(power);
+            Hardware.frontRight.setPower(power);
+            Hardware.backRight.setPower(power);
 
-        while (busy()) {
             telemetry.addLine("Running..");
             telemetry.update();
         }
-
-        resetMotors();
         sleep(msToWaitAfter);
     }
 

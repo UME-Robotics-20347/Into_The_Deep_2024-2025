@@ -4,33 +4,102 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
-@Autonomous(name="Clank Autonomous Blue Back", group="Autonomous Bread")
-public class ClankAutoBlueBackup extends LinearOpMode {
+@Autonomous(name="Clank Auto Alt", group="Autonomous Bread")
+public class ClankAutoAlt extends LinearOpMode {
 
     static final double countsPerMotorRev = 140;
-    static final double wheelCircumferenceInches = 3.78 * Math.PI;
+    static final double wheelCircumferenceInches = 3.5 * Math.PI;
     static final double countsPerInch = countsPerMotorRev / wheelCircumferenceInches;
-    static final double countsPerDegree = (countsPerInch * (14.31 * Math.PI) / 360) * (4.0/3.0); // 1.5 is a magic number, idk why it workso
+    static final double countsPerDegree = (countsPerInch * (14.31 * Math.PI) / 360) * (4.1/3.0); // 1.5 is a magic number, idk why it workso
 
     @Override
     public void runOpMode() {
+        //1. init
         Hardware.init(this.hardwareMap);
 
         resetMotors();
+        //Hardware.claw.setPower(-0.3);
 
         waitForStart();
 
-        encoderTurn(0.5, 90, 0);
-        encoderDrive(-0.5, -48, 100);
+        //Hardware.inTake.setPower(0.1);
+        sleep(500);
+        //linearSlideTo(0);
+
+        //↶, ↷, ↑, ↓, °
+
+        //1. ↑48"
+        encoderDrive(-1, -78, 10);
+        //turn wrist
+        Hardware.wrist.setPosition(0);
+        //Hardware.wrist.setPower(-0.1);
+        sleep(1000);
+        //move arm
+        Hardware.armMotor.setPower(-0.5);
+        sleep(1300);
+        Hardware.armMotor.setPower(0);
+        //drive back a little
+        encoderDrive(-2, 20, 10);
+        //spit out
+        Hardware.inTake.setPower(-1);
+        sleep(1000);
+        Hardware.inTake.setPower(0);
+        //drive back slightly
+        encoderDrive(-1, 10, 10);
+        //move arm back
+        //Hardware.linearSlide.setPower(0.25);
+        //sleep(2000);
+        //Hardware.linearSlide.setPower(0);
+        //drive back to the wall
+        encoderDrive(-1, 50, 10);
+        //turn 90 degrees
+        //encoderTurn(-0.5, -240, 10);
+        //drive to park
+        //encoderDrive(-1, -72, 10);
+
+        //4. ↑48"
+        //encoderDrive(-0.5, -48, 10);
+        //5. slide↓=0, drop
+
+        //linearSlideTo(0);
+        //Hardware.claw.setPower(0.5);
+        //sleep(1000);
+/*
+        //6. slide↑=72
+        linearSlideTo(-72);
+        //7. ↓48"
+        encoderDrive(0.5, 48, 10);
+        //8. ↶90°
+        encoderTurn(0.5, 90, 10);
+        //9. ↑21"
+        encoderDrive(-0.5,-21,10);
+        //10. slide↓=0, grab
+
+        linearSlideTo(0);
+        Hardware.claw.setPower(-0.3);
+
+        //11. slide↑=72
+        linearSlideTo(-72);
+        //12. ↓21"
+        encoderDrive(0.5, 21, 10);
+        //13. ↷90°
+        encoderTurn(-0.5, -90, 10);
+        //14. ↑48"
+        encoderDrive(-0.5, -48, 10);
+        //15. slide↓=0, drop
+        linearSlideTo(0);
+        Hardware.claw.setPower(0.5);
+        sleep(1000);
+*/
     }
 
     public void encoderDrive(double speed, double inches, int msToWaitAfter) {
         resetMotors();
 
         Hardware.backLeft.setTargetPosition((int)Math.round(inches * countsPerInch));
-        Hardware.backRight.setTargetPosition((int)Math.round(inches * countsPerInch));
+        Hardware.backRight.setTargetPosition(-(int)Math.round(inches * countsPerInch));
         Hardware.frontLeft.setTargetPosition((int)Math.round(inches * countsPerInch));
-        Hardware.frontRight.setTargetPosition((int)Math.round(inches * countsPerInch));
+        Hardware.frontRight.setTargetPosition(-(int)Math.round(inches * countsPerInch));
 
         Hardware.backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         Hardware.backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -39,9 +108,9 @@ public class ClankAutoBlueBackup extends LinearOpMode {
 
         //Start motion.
         Hardware.backLeft.setPower(speed);
-        Hardware.backRight.setPower(speed);
+        Hardware.backRight.setPower(-speed);
         Hardware.frontLeft.setPower(speed);
-        Hardware.frontRight.setPower(speed);
+        Hardware.frontRight.setPower(-speed);
 
         while (busy()) {
             telemetry.addLine("Running..");
@@ -52,12 +121,21 @@ public class ClankAutoBlueBackup extends LinearOpMode {
         sleep(msToWaitAfter);
     }
 
+    public void linearSlideTo(int position) {
+        Hardware.armMotor.setTargetPosition(position);
+        Hardware.armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Hardware.armMotor.setPower(0.5);
+        while (Hardware.armMotor.isBusy()) {
+            telemetry.addLine("Raising linear slide..");
+        }
+        Hardware.armMotor.setPower(0);
+    }
     public void encoderTurn(double speed, double turnDegrees, int msToWaitAfter) {
         resetMotors();
         Hardware.backLeft.setTargetPosition((int) (turnDegrees * countsPerDegree));
-        Hardware.backRight.setTargetPosition((int) (-turnDegrees * countsPerDegree));
+        Hardware.backRight.setTargetPosition((int) (turnDegrees * countsPerDegree));
         Hardware.frontLeft.setTargetPosition((int) (turnDegrees * countsPerDegree));
-        Hardware.frontRight.setTargetPosition((int) (-turnDegrees * countsPerDegree));
+        Hardware.frontRight.setTargetPosition((int) (turnDegrees * countsPerDegree));
 
         //Turn On RUN_TO_POSITION
         Hardware.backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -68,9 +146,9 @@ public class ClankAutoBlueBackup extends LinearOpMode {
         //reset the timeout time and start motion.
         resetRuntime();
         Hardware.backLeft.setPower(speed);
-        Hardware.backRight.setPower(-speed);
+        Hardware.backRight.setPower(speed);
         Hardware.frontLeft.setPower(speed);
-        Hardware.frontRight.setPower(-speed);
+        Hardware.frontRight.setPower(speed);
 
         while (busy()) {
             telemetry.addLine("Running..");
